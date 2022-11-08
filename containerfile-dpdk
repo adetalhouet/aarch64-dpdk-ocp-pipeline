@@ -22,12 +22,3 @@ USER root
 
 RUN mkdir /home/dpdk/bin
 COPY dpdk-${DPDK_VERSION} /home/dpdk/
-
-RUN dnf install -y --setopt=tsflags=nodocs --nogpgcheck --disableplugin=subscription-manager python3
-RUN pip3 install --upgrade pip
-RUN pip3 install ninja
-RUN cd /home/dpdk/
-RUN ninja -C build install
-RUN rm -rf *
-
-COPY pktgen-dpdk/Builddir/app/pktgen /home/dpdk/bin
