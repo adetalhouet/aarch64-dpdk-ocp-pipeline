@@ -1,0 +1,26 @@
+FROM registry.access.redhat.com/ubi8/ubi
+
+ARG PKTGEN_VERSION
+
+LABEL maintainer="Red Hat"
+LABEL com.redhat.component="ubi8-container" \
+      name="pktgen" \
+      version="${PKTGEN_VERSION}"
+LABEL summary="Provides the ${PKTGEN_VERSION} release of pktgen."
+LABEL io.k8s.display-name="Packet Generator ${PKTGEN_VERSION}"
+LABEL io.openshift.tags="pktgen"
+
+RUN dnf install -y --setopt=tsflags=nodocs --nogpgcheck --disableplugin=subscription-manager \
+    libpcap libatomic openssl \
+    http://mirror.centos.org/centos/8-stream/BaseOS/aarch64/os/Packages/jansson-2.14-1.el8.aarch64.rpm \
+    http://mirror.centos.org/centos/8-stream/BaseOS/aarch64/os/Packages/numactl-libs-2.0.12-13.el8.aarch64.rpm \
+    http://mirror.centos.org/centos/8-stream/BaseOS/aarch64/os/Packages/numactl-devel-2.0.12-13.el8.aarch64.rpm
+
+RUN useradd -s /bin/bash -d /home/pktgen/ -m -u 1999 pktgen
+WORKDIR /home/pktgen
+USER root
+
+RUN mkdir /home/pktgen/bin
+COPY pktgen-dpdk/Builddir/app/pktgen /home/pktgen/bin
+COPY dpdk-${DPDK_VERSION}/build/lib /usr/lib64
+COPY dpdk-${DPDK_VERSION}/build/drivers /usr/lib64

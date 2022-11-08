@@ -1,0 +1,33 @@
+FROM registry.access.redhat.com/ubi8/ubi
+
+ARG DPDK_VERSION
+
+LABEL maintainer="Red Hat"
+LABEL com.redhat.component="ubi8-container" \
+      name="dpdk" \
+      version="${DPDK_VERSION}"
+LABEL summary="Provides the compilled ${DPDK_VERSION} release of DPDK."
+LABEL io.k8s.display-name="DPDK ${DPDK_VERSION}"
+LABEL io.openshift.tags="dpdk"
+
+RUN dnf install -y --setopt=tsflags=nodocs --nogpgcheck --disableplugin=subscription-manager \
+    libpcap libatomic openssl \
+    http://mirror.centos.org/centos/8-stream/BaseOS/aarch64/os/Packages/jansson-2.14-1.el8.aarch64.rpm \
+    http://mirror.centos.org/centos/8-stream/BaseOS/aarch64/os/Packages/numactl-libs-2.0.12-13.el8.aarch64.rpm \
+    http://mirror.centos.org/centos/8-stream/BaseOS/aarch64/os/Packages/numactl-devel-2.0.12-13.el8.aarch64.rpm
+
+RUN useradd -s /bin/bash -d /home/dpdk/ -m -u 1999 dpdk
+WORKDIR /home/dpdk
+USER root
+
+RUN mkdir /home/dpdk/bin
+COPY dpdk-${DPDK_VERSION} /home/dpdk/
+
+RUN dnf install -y --setopt=tsflags=nodocs --nogpgcheck --disableplugin=subscription-manager python3
+RUN pip3 install --upgrade pip
+RUN pip3 install ninja
+RUN cd /home/dpdk/
+RUN ninja -C build install
+RUN rm -rf *
+
+COPY pktgen-dpdk/Builddir/app/pktgen /home/dpdk/bin

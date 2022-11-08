@@ -1,0 +1,11 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: build-dpdk-run-5bayz7
+  labels:
+    tekton.dev/pipeline: script
+spec:
+  pipelineRef:
+    name: script
+  serviceAccountName: pipeline
+  timeout: 1h0m0s

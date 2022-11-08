@@ -1,0 +1,24 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: run-script
+spec:
+  steps:
+    - image: registry.redhat.io/rhel8/buildah
+      name: build
+      resources: {}
+      script: |
+        git clone https://github.com/adetalhouet/aarch64-dpdk-ocp-pipeline.git;
+        cd aarch64-dpdk-ocp-pipeline;
+        ./build.sh
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: build-dpdk
+spec:
+  tasks:
+    - name: run-script
+      taskRef:
+        kind: Task
+        name: run-script

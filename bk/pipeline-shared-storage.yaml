@@ -1,0 +1,136 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: dpdk-build
+spec:
+  tasks:
+    - name: dpdk
+      params:
+        - name: IMAGE
+          value: 'dpdk:$(DPDK_VERSION)'
+        - name: BUILDER_IMAGE
+          value: >-
+            registry.redhat.io/rhel8/buildah@sha256:0a86ecbdfbe86e9d225b7fe4b090a0dd6d323f8afdfdf2bd933ff223ddb53320
+        - name: STORAGE_DRIVER
+          value: vfs
+        - name: DOCKERFILE
+          value: /workspace/input/containerfile-dpdk
+        - name: CONTEXT
+          value: .
+        - name: TLSVERIFY
+          value: 'true'
+        - name: FORMAT
+          value: oci
+        - name: SKIP_PUSH
+          value: 'false'
+        - name: BUILD_EXTRA_ARGS
+          value: DPDK_VERSION=$(DPDK_VERSION)
+      runAfter:
+        - run-script
+      taskRef:
+        kind: ClusterTask
+        name: buildah
+      workspaces:
+        - name: source
+          workspace: workspace
+    - name: testpmd
+      params:
+        - name: IMAGE
+          value: 'testpmd:$(DPDK_VERSION)'
+        - name: BUILDER_IMAGE
+          value: >-
+            registry.redhat.io/rhel8/buildah@sha256:0a86ecbdfbe86e9d225b7fe4b090a0dd6d323f8afdfdf2bd933ff223ddb53320
+        - name: STORAGE_DRIVER
+          value: vfs
+        - name: DOCKERFILE
+          value: /workspace/input/containerfile-testpmd
+        - name: CONTEXT
+          value: .
+        - name: TLSVERIFY
+          value: 'true'
+        - name: FORMAT
+          value: oci
+        - name: SKIP_PUSH
+          value: 'false'
+        - name: BUILD_EXTRA_ARGS
+          value: DPDK_VERSION=$(DPDK_VERSION)
+      runAfter:
+        - run-script
+      taskRef:
+        kind: ClusterTask
+        name: buildah
+      workspaces:
+        - name: source
+          workspace: workspace
+    - name: pktgen
+      params:
+        - name: IMAGE
+          value: 'pktgen:$(DPDK_VERSION)'
+        - name: BUILDER_IMAGE
+          value: >-
+            registry.redhat.io/rhel8/buildah@sha256:0a86ecbdfbe86e9d225b7fe4b090a0dd6d323f8afdfdf2bd933ff223ddb53320
+        - name: STORAGE_DRIVER
+          value: vfs
+        - name: DOCKERFILE
+          value: /workspace/input/containerfile-pktgen
+        - name: CONTEXT
+          value: .
+        - name: TLSVERIFY
+          value: 'true'
+        - name: FORMAT
+          value: oci
+        - name: SKIP_PUSH
+          value: 'false'
+        - name: BUILD_EXTRA_ARGS
+          value: PKTGEN_VERSION=$(PKTGEN_VERSION)
+      runAfter:
+        - run-script
+      taskRef:
+        kind: ClusterTask
+        name: buildah
+      workspaces:
+        - name: source
+          workspace: workspace
+    - name: git-clone
+      params:
+        - name: url
+          value: 'https://github.com/adetalhouet/aarch64-dpdk-ocp-pipeline.git'
+        - name: submodules
+          value: 'true'
+        - name: depth
+          value: '1'
+        - name: sslVerify
+          value: 'true'
+        - name: crtFileName
+          value: ca-bundle.crt
+        - name: deleteExisting
+          value: 'true'
+        - name: verbose
+          value: 'true'
+        - name: gitInitImage
+          value: >-
+            registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8@sha256:cadf614a6044ee37397de3abe7674827ecab225e7fac9fb123eff5473e2c4003
+        - name: userHome
+          value: /tekton/home
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: workspace
+    - name: run-script
+      params:
+        - name: DPDK_VERSION
+          value: $(DPDK_VERSION)
+        - name: PKTGEN_VERSION
+          value: $(PKTGEN_VERSION)
+      runAfter:
+        - git-clone
+      taskRef:
+        kind: Task
+        name: run-script
+      workspaces:
+        - name: input
+          workspace: workspace
+  workspaces:
+    - name: workspace
