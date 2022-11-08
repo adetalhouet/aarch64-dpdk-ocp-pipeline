@@ -1,6 +1,7 @@
 FROM registry.access.redhat.com/ubi8/ubi
 
 ARG PKTGEN_VERSION
+ARG DPDK_VERSION
 
 LABEL maintainer="Red Hat"
 LABEL com.redhat.component="ubi8-container" \
